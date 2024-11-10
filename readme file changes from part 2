@@ -1,0 +1,43 @@
+Explanation of Changes from Part 2 to Part 3 
+
+In Part 2, the code provides a straightforward menu and dish management system. Part 3 introduces more complex features, such as navigation enhancements, a more structured data model for dishes, a filtering mechanism, and improved back-navigation logic. Below is a breakdown of the main changes: 
+
+1. Navigation and Screen Management 
+
+Part 2: Navigation was managed by a single currentScreen state to track the active screen. 
+
+Part 3: The navigation state is converted to an array (currentScreen), which helps manage navigation history, allowing for the ability to go back to previous screens using a goBack function. 
+
+2. Data Structure for Dishes 
+
+Part 2: dishes was a simple array of strings representing the dish names. 
+
+Part 3: dishes is an array of objects, where each dish object includes additional details (name, description, course, price). This structure enables richer functionality like displaying prices and descriptions for each dish. 
+
+3. Average Price Calculation 
+
+Part 3: A new calculateAveragePrice function is added to calculate and display the average price of the dishes, enhancing the overview of the menu. 
+
+4. FlatList for Dish Display 
+
+Part 2: dishes were displayed using simple mapping with Text elements. 
+
+Part 3: Dishes are displayed using FlatList, which is more efficient for rendering lists and adds the ability to delete dishes individually. A FlatList component also improves scalability as it only renders visible items. 
+
+5. Filtering Functionality 
+
+Part 3: A new Filter screen allows users to filter dishes by course (e.g., Starter, Main, Dessert). The filter is applied using FlatList to render only items matching the selected course. 
+
+6. Enhanced dishDetails Input 
+
+Part 3: TextInput for price includes keyboardType="numeric" for better UX, ensuring the price input is numeric. 
+
+7. Refined UI Elements 
+
+Part 3: New styles for FlatList items, delete buttons, and filter buttons make the UI more user-friendly and consistent. 
+
+ 
+
+These modifications in Part 3 build on the basic structure from Part 2 by adding features that make the app more dynamic and flexible, enhancing both navigation and data interaction for a richer user experience. 
+
+ 
