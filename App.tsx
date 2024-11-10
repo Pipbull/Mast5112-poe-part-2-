@@ -1,128 +1,154 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, TextInput, FlatList } from 'react-native';
 
 const App: React.FC = () => {
-  const [currentScreen, setCurrentScreen] = useState('Start');
-  const [dishes, setDishes] = useState<string[]>(['Pizza', 'Pasta', 'Burger']);
-  const [selectedDish, setSelectedDish] = useState<string | null>(null);
+  const [currentScreen, setCurrentScreen] = useState<string[]>(['Start']);
+  const [dishes, setDishes] = useState<{ name: string, description: string, course: string, price: number }[]>([
+    { name: 'Pizza', description: 'Cheesy and delicious', course: 'Main', price: 10 },
+    { name: 'Pasta', description: 'Rich in flavor', course: 'Main', price: 8 },
+    { name: 'Burger', description: 'Juicy and filling', course: 'Main', price: 12 }
+  ]);
   const [dishDetails, setDishDetails] = useState({ name: '', description: '', course: '', price: '' });
+  const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
 
-  const handleDishSelect = (dish: string) => {
-    setSelectedDish(dish);
-    const dishInfo = dishes.find(d => d === dish) || ''; // Get the selected dish info
-    setDishDetails({ name: dishInfo, description: '', course: '', price: '' }); // Set details for editing
-    setCurrentScreen('Third');
+  const navigateTo = (screen: string) => {
+    setCurrentScreen((prevScreens) => [...prevScreens, screen]);
+  };
+
+  const goBack = () => {
+    setCurrentScreen((prevScreens) => prevScreens.slice(0, -1));
   };
 
   const handleAddDish = () => {
-    if (dishDetails.name.trim() !== '') {
-      // Add new dish only if name is provided
-      setDishes((prevDishes) => [...prevDishes, dishDetails.name]);
-      setDishDetails({ name: '', description: '', course: '', price: '' }); // Clear input fields
-      setCurrentScreen('Second'); // Navigate back to the dish list
+    if (dishDetails.name.trim() !== '' && dishDetails.price) {
+      setDishes((prevDishes) => [...prevDishes, { ...dishDetails, price: parseFloat(dishDetails.price) }]);
+      setDishDetails({ name: '', description: '', course: '', price: '' });
+      navigateTo('Menu');
     }
   };
 
-  const handleDeleteDish = () => {
-    if (selectedDish) {
-      setDishes(dishes.filter(dish => dish !== selectedDish)); // Remove the selected dish
-      setCurrentScreen('Second'); // Navigate back to the dish list
-    }
+  const handleDeleteDish = (dishName: string) => {
+    setDishes(dishes.filter(dish => dish.name !== dishName));
+  };
+
+  const calculateAveragePrice = () => {
+    if (dishes.length === 0) return 0;
+    const total = dishes.reduce((sum, dish) => sum + dish.price, 0);
+    return (total / dishes.length).toFixed(2);
   };
 
   const renderScreen = () => {
-    switch (currentScreen) {
+    const current = currentScreen[currentScreen.length - 1];
+
+    switch (current) {
       case 'Start':
         return (
           <View style={styles.container}>
             <Image source={require('./assets/front_image.png')} style={styles.frontImage} />
             <Image source={require('./assets/logo.png')} style={styles.logoImage} />
             <Text style={styles.navText}>Welcome to Chef's Corner</Text>
-            
-            {/* Total Number of Menu Items */}
-            <Text style={styles.menuCountText}>Total Menu Items: {dishes.length}</Text>
-            
-            {/* Display Menu Items */}
-            <View style={styles.menuPreview}>
-              {dishes.map((dish) => (
-                <Text key={dish} style={styles.dishItem}>{dish}</Text>
-              ))}
-            </View>
+            <Text style={styles.menuCountText}>Average Price: ${calculateAveragePrice()}</Text>
 
-            <TouchableOpacity style={styles.exploreButton} onPress={() => setCurrentScreen('Second')}>
-              <Text style={styles.exploreButtonText}>Explore Dishes</Text>
+            <TouchableOpacity style={styles.exploreButton} onPress={() => navigateTo('Menu')}>
+              <Text style={styles.exploreButtonText}>View Menu</Text>
             </TouchableOpacity>
           </View>
         );
-      case 'Second':
+
+      case 'Menu':
         return (
           <View style={styles.container}>
-            <Text style={styles.header}>Chef's Dish List</Text>
-            {dishes.map((dish) => (
-              <TouchableOpacity key={dish} onPress={() => handleDishSelect(dish)}>
-                <Text style={styles.dishItem}>{dish}</Text>
-              </TouchableOpacity>
-            ))}
-            <TouchableOpacity style={styles.actionButton} onPress={() => {
-              setDishDetails({ name: '', description: '', course: '', price: '' }); // Clear input fields for new dish
-              setCurrentScreen('Third'); // Navigate to the edit screen for a new dish
-            }}>
+            <Text style={styles.header}>Chef's Menu</Text>
+            <TouchableOpacity style={styles.filterButton} onPress={() => navigateTo('Filter')}>
+              <Text style={styles.buttonText}>Filter by Course</Text>
+            </TouchableOpacity>
+            <FlatList
+              data={dishes}
+              keyExtractor={(item) => item.name}
+              renderItem={({ item }) => (
+                <View style={styles.dishItemContainer}>
+                  <Text style={styles.dishItem}>{item.name} - ${item.price}</Text>
+                  <TouchableOpacity onPress={() => handleDeleteDish(item.name)}>
+                    <Text style={styles.deleteText}>Remove</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            />
+            <TouchableOpacity style={styles.actionButton} onPress={() => navigateTo('Add')}>
               <Text style={styles.buttonText}>Add New Dish</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton} onPress={() => setCurrentScreen('Start')}>
-              <Text style={styles.buttonText}>Back to Start</Text>
+            <TouchableOpacity style={styles.backButton} onPress={goBack}>
+              <Text style={styles.buttonText}>Back</Text>
             </TouchableOpacity>
           </View>
         );
-      case 'Third':
+
+      case 'Add':
         return (
           <View style={styles.container}>
-            <TouchableOpacity style={styles.topButton} onPress={() => setCurrentScreen('Second')}>
-              <Text>Back</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteDish}>
-              <Text style={styles.deleteButtonText}>Delete</Text>
-            </TouchableOpacity>
-            <View style={styles.dishEditContainer}>
-              <TextInput
-                placeholder="Dish Name"
-                value={dishDetails.name}
-                onChangeText={(text) => setDishDetails({ ...dishDetails, name: text })}
-                style={styles.input}
-              />
-              <TextInput
-                placeholder="Description"
-                value={dishDetails.description}
-                onChangeText={(text) => setDishDetails({ ...dishDetails, description: text })}
-                style={styles.input}
-              />
-              <TextInput
-                placeholder="Available Courses"
-                value={dishDetails.course}
-                onChangeText={(text) => setDishDetails({ ...dishDetails, course: text })}
-                style={styles.input}
-              />
-              <TextInput
-                placeholder="Price"
-                value={dishDetails.price}
-                onChangeText={(text) => setDishDetails({ ...dishDetails, price: text })}
-                style={styles.input}
-              />
-            </View>
+            <TextInput
+              placeholder="Dish Name"
+              value={dishDetails.name}
+              onChangeText={(text) => setDishDetails({ ...dishDetails, name: text })}
+              style={styles.input}
+            />
+            <TextInput
+              placeholder="Description"
+              value={dishDetails.description}
+              onChangeText={(text) => setDishDetails({ ...dishDetails, description: text })}
+              style={styles.input}
+            />
+            <TextInput
+              placeholder="Course (e.g., Starter, Main)"
+              value={dishDetails.course}
+              onChangeText={(text) => setDishDetails({ ...dishDetails, course: text })}
+              style={styles.input}
+            />
+            <TextInput
+              placeholder="Price"
+              keyboardType="numeric"
+              value={dishDetails.price}
+              onChangeText={(text) => setDishDetails({ ...dishDetails, price: text })}
+              style={styles.input}
+            />
             <TouchableOpacity style={styles.editButton} onPress={handleAddDish}>
               <Text style={styles.buttonText}>Save Dish</Text>
             </TouchableOpacity>
-          </View>
-        );
-      case 'Fourth':
-        return (
-          <View style={styles.container}>
-            <Image source={require('./assets/goodbye.png')} style={styles.goodbyeImage} />
-            <TouchableOpacity style={styles.actionButton} onPress={() => setCurrentScreen('Start')}>
-              <Text style={styles.buttonText}>Done</Text>
+            <TouchableOpacity style={styles.backButton} onPress={goBack}>
+              <Text style={styles.buttonText}>Back</Text>
             </TouchableOpacity>
           </View>
         );
+
+      case 'Filter':
+        return (
+          <View style={styles.container}>
+            <Text style={styles.header}>Filter by Course</Text>
+            {['Starter', 'Main', 'Dessert'].map((course) => (
+              <TouchableOpacity
+                key={course}
+                style={styles.courseButton}
+                onPress={() => setSelectedCourse(course)}
+              >
+                <Text style={styles.courseText}>{course}</Text>
+              </TouchableOpacity>
+            ))}
+            <FlatList
+              data={dishes.filter(dish => selectedCourse ? dish.course === selectedCourse : true)}
+              keyExtractor={(item) => item.name}
+              renderItem={({ item }) => (
+                <Text style={styles.dishItem}>{item.name} - ${item.price}</Text>
+              )}
+            />
+            <TouchableOpacity style={styles.actionButton} onPress={() => navigateTo('Menu')}>
+              <Text style={styles.buttonText}>Back to Menu</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.backButton} onPress={goBack}>
+              <Text style={styles.buttonText}>Back</Text>
+            </TouchableOpacity>
+          </View>
+        );
+
       default:
         return <Text>Unknown Screen</Text>;
     }
@@ -133,139 +159,26 @@ const App: React.FC = () => {
 
 // Styles
 const styles = StyleSheet.create({
-  appContainer: {
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'white',
-  },
-  frontImage: {
-    width: '100%',
-    height: 200,
-    resizeMode: 'cover',
-    position: 'absolute',
-    top: 20,
-  },
-  logoImage: {
-    width: 150,
-    height: 150,
-    resizeMode: 'contain',
-    marginTop: 220,
-  },
-  navText: {
-    color: 'black',
-    marginTop: 20,
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  menuCountText: {
-    marginTop: 15,
-    fontSize: 16,
-    color: '#555',
-    fontWeight: '600',
-  },
-  menuPreview: {
-    marginTop: 20,
-  },
-  dishItem: {
-    fontSize: 16,
-    color: '#333',
-    marginVertical: 5,
-  },
-  exploreButton: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 25,
-    marginTop: 30,
-  },
-  exploreButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  header: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  actionButton: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-    marginTop: 20,
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  topButton: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
-  },
-  deleteButton: {
-    position: 'absolute',
-    top: 60, // Lowered the delete button
-    right: 10,
-    backgroundColor: 'red',
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderRadius: 5,
-  },
-  deleteButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  dishEditContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 50,
-  },
-  input: {
-    height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    width: 200,
-    marginBottom: 20,
-    paddingLeft: 8,
-    borderRadius: 5,
-  },
-  editButton: {
-    backgroundColor: '#007AFF',
-    borderRadius: 5,
-    padding: 10,
-  },
-  goodbyeImage: {
-    width: 200,
-    height: 200,
-    resizeMode: 'contain',
-    marginBottom: 20,
-  },
+  appContainer: { flex: 1 },
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' },
+  frontImage: { width: '100%', height: 200, resizeMode: 'cover', position: 'absolute', top: 20 },
+  logoImage: { width: 150, height: 150, resizeMode: 'contain', marginTop: 220 },
+  navText: { color: 'black', marginTop: 20, fontSize: 18, fontWeight: 'bold' },
+  menuCountText: { marginTop: 15, fontSize: 16, color: '#555', fontWeight: '600' },
+  exploreButton: { backgroundColor: '#007AFF', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 25, marginTop: 30 },
+  exploreButtonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
+  header: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
+  actionButton: { backgroundColor: '#007AFF', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 5, marginTop: 20 },
+  buttonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
+  input: { height: 40, borderColor: 'gray', borderWidth: 1, width: 200, marginBottom: 20, paddingLeft: 8, borderRadius: 5 },
+  dishItemContainer: { flexDirection: 'row', justifyContent: 'space-between', width: 250, marginVertical: 5 },
+  dishItem: { fontSize: 16, color: '#333' },
+  deleteText: { color: 'red', fontSize: 14 },
+  editButton: { backgroundColor: '#007AFF', borderRadius: 5, padding: 10 },
+  filterButton: { backgroundColor: '#34A853', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 5, marginTop: 20 },
+  backButton: { backgroundColor: '#FF3B30', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 5, marginTop: 20 },
+  courseButton: { backgroundColor: '#4285F4', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 5, marginVertical: 5 },
+  courseText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
 });
 
-export default App;/*end of code*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+export default App;
